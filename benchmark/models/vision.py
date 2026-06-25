@@ -66,14 +66,21 @@ class VisionTorchCell:
 class VisionMLXCell:
     model_class = "vision"
 
+    # MLX-native builders, keyed like the registry.
+    _BUILDERS = {
+        "resnet50": "benchmark.models._mlx_resnet",
+        "vit_b_16": "benchmark.models._mlx_vit",
+    }
+
     def __init__(self, backend, dtype: str, cfg, display_name: str, key: str):
-        from benchmark.models._mlx_resnet import load_pretrained
+        import importlib
 
         self.backend = backend
         self.cfg = cfg
         self.display_name = display_name
         self.dtype_str = "fp32"  # MLX-native weights are FP32
-        self.model = load_pretrained()
+        module = importlib.import_module(self._BUILDERS[key])
+        self.model = module.load_pretrained()
 
     def make_input(self):
         import mlx.core as mx
@@ -97,9 +104,7 @@ class VisionMLXCell:
 
 def _load(backend, dtype, cfg, display_name, key):
     if backend.NAME == "mlx":
-        if key == "resnet50":
-            return VisionMLXCell(backend, dtype, cfg, display_name, key)
-        raise ModelUnavailable("MLX-native ViT deferred — ViT-B/16 runs on CPU in this slice")
+        return VisionMLXCell(backend, dtype, cfg, display_name, key)
     if backend.NAME == "cuda":  # pragma: no cover - stub backend
         raise ModelUnavailable("CUDA backend is a stub on this host")
     return VisionTorchCell(backend, dtype, cfg, display_name, key)
