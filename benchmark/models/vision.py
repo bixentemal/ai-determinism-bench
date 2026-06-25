@@ -12,8 +12,6 @@ from __future__ import annotations
 
 import numpy as np
 
-from benchmark.models import ModelUnavailable
-
 _TORCH_DTYPE = {"fp32": "float32", "bf16": "bfloat16", "fp16": "float16"}
 
 # key -> (torchvision weights-enum attr, enum member, builder fn)
@@ -39,7 +37,7 @@ class VisionTorchCell:
         enum_attr, member, fn_name = _VISION_MODELS[key]
         weights = getattr(getattr(torchvision.models, enum_attr), member)
         builder = getattr(torchvision.models, fn_name)
-        self.model = builder(weights=weights).eval().to(self._tdtype)
+        self.model = builder(weights=weights).eval().to(self._tdtype).to(backend.device)
 
     def make_input(self):
         import torch
@@ -48,7 +46,7 @@ class VisionTorchCell:
         return torch.randn(
             self.cfg.batch_size, 3, self.cfg.image_size, self.cfg.image_size,
             generator=g, dtype=torch.float32,
-        ).to(self._tdtype)
+        ).to(self._tdtype).to(self.backend.device)
 
     def infer(self, x):
         import torch
@@ -105,8 +103,6 @@ class VisionMLXCell:
 def _load(backend, dtype, cfg, display_name, key):
     if backend.NAME == "mlx":
         return VisionMLXCell(backend, dtype, cfg, display_name, key)
-    if backend.NAME == "cuda":  # pragma: no cover - stub backend
-        raise ModelUnavailable("CUDA backend is a stub on this host")
     return VisionTorchCell(backend, dtype, cfg, display_name, key)
 
 

@@ -51,6 +51,11 @@ class Backend(abc.ABC):
     def to_numpy(self, output: Any) -> np.ndarray:
         """Convert a backend tensor to a host numpy array for numerical comparison."""
 
+    @property
+    def device(self) -> str:
+        """PyTorch device string used for model and input placement."""
+        return "cpu"
+
     # --- memory ---------------------------------------------------------
     def reset_peak_memory(self) -> None:
         return None

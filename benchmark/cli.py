@@ -20,12 +20,13 @@ def _parse(argv) -> argparse.Namespace:
     p = argparse.ArgumentParser(prog="python -m benchmark", description=__doc__)
     p.add_argument("--quick", action="store_true", help="fast smoke profile (small shapes, few runs)")
     p.add_argument("--expert", action="store_true", help="(fast-follow) granular 4-level decomposition")
-    p.add_argument("--tier", choices=["quick", "core"], help="model tier (default: core)")
+    p.add_argument("--tier", choices=["quick", "core", "llm-scale"], help="model tier (default: core)")
     p.add_argument("--backend", choices=["cpu", "mlx", "cuda"], help="backend (default: auto-detect)")
     p.add_argument("--models", help="comma list of classes: vision,llm")
     p.add_argument("--dtype", choices=["fp32", "bf16", "fp16"], help="override dtype uniformly")
     p.add_argument("--n-runs", type=int, help="measurement runs")
     p.add_argument("--n-warmup", type=int, help="warmup runs")
+    p.add_argument("--prompt-len", type=int, help="prompt length in tokens (LLM only)")
     p.add_argument("--output", help="output path stem")
     p.add_argument("--format", default="table", help="comma list: table,json,csv")
     return p.parse_args(argv)
@@ -45,6 +46,8 @@ def main(argv=None) -> int:
         cfg.n_runs = args.n_runs
     if args.n_warmup is not None:
         cfg.n_warmup = args.n_warmup
+    if args.prompt_len is not None:
+        cfg.prompt_len = args.prompt_len
     cfg.output = args.output
     cfg.formats = [f.strip() for f in args.format.split(",") if f.strip()]
 

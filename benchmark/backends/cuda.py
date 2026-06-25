@@ -8,19 +8,6 @@ from benchmark.backends.base import Backend
 
 
 class CUDABackend(Backend):
-    """CUDA backend — STUB.
-
-    The full implementation (cuDNN/cuBLAS determinism flags, `torch.cuda.Event`
-    timing, `torch.cuda.max_memory_allocated`) is deferred until it can be run and
-    validated on an actual NVIDIA host. On non-CUDA machines this backend simply
-    reports itself unavailable so auto-detection skips it cleanly. See SPEC
-    §Hardware Backends and §Statistical Protocol for the target behavior.
-
-    To implement: time_call() uses cuda.Event start/end + synchronize; metadata
-    reads get_device_name/properties + torch.version.cuda + cudnn.version();
-    max_det_level is FULL_DET.
-    """
-
     NAME = "cuda"
 
     @staticmethod
@@ -40,11 +27,49 @@ class CUDABackend(Backend):
     def max_det_level(self) -> str:
         return "FULL_DET"
 
-    def hardware_metadata(self) -> dict[str, Any]:  # pragma: no cover - needs GPU
-        raise NotImplementedError("CUDA backend is a stub; run on a CUDA host to implement.")
+    @property
+    def device(self) -> str:
+        return "cuda"
 
-    def time_call(self, fn: Callable[[], Any]) -> tuple[float, Any]:  # pragma: no cover
-        raise NotImplementedError("CUDA backend is a stub; run on a CUDA host to implement.")
+    def hardware_metadata(self) -> dict[str, Any]:
+        import torch
 
-    def to_numpy(self, output: Any) -> np.ndarray:  # pragma: no cover
-        raise NotImplementedError("CUDA backend is a stub; run on a CUDA host to implement.")
+        idx = torch.cuda.current_device()
+        props = torch.cuda.get_device_properties(idx)
+        return {
+            "device": torch.cuda.get_device_name(idx),
+            "device_index": idx,
+            "total_memory_gb": props.total_memory / (1024 ** 3),
+            "compute_capability": f"{props.major}.{props.minor}",
+            "torch_version": torch.__version__,
+            "cuda_version": torch.version.cuda,
+            "cudnn_version": torch.backends.cudnn.version(),
+        }
+
+    def time_call(self, fn: Callable[[], Any]) -> tuple[float, Any]:
+        import torch
+
+        start = torch.cuda.Event(enable_timing=True)
+        end = torch.cuda.Event(enable_timing=True)
+        start.record()
+        output = fn()
+        end.record()
+        torch.cuda.synchronize()
+        return start.elapsed_time(end), output
+
+    def to_numpy(self, output: Any) -> np.ndarray:
+        import torch
+
+        if isinstance(output, torch.Tensor):
+            return output.detach().to(torch.float32).cpu().numpy()
+        return np.asarray(output, dtype=np.float32)
+
+    def reset_peak_memory(self) -> None:
+        import torch
+
+        torch.cuda.reset_peak_memory_stats()
+
+    def peak_memory_mb(self) -> float | None:
+        import torch
+
+        return torch.cuda.max_memory_allocated() / (1024 * 1024)

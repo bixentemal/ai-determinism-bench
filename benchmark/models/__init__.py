@@ -20,23 +20,27 @@ class ModelSpec:
     loader: str       # module:function
 
 
-# Registry of models available in this slice. Llama / Mamba are fast-follow.
+# Registry of models available in this slice.
 REGISTRY: dict[str, ModelSpec] = {
     "resnet50": ModelSpec("resnet50", "ResNet-50", "vision", "benchmark.models.vision:load_resnet50"),
     "vit": ModelSpec("vit", "ViT-B/16", "vision", "benchmark.models.vision:load_vit"),
     "gpt2": ModelSpec("gpt2", "GPT-2", "llm", "benchmark.models.llm:load_gpt2"),
+    "qwen3_0b6": ModelSpec("qwen3_0b6", "Qwen3-0.6B", "llm", "benchmark.models.llm:load_qwen3_0b6"),
+    "qwen3_8b": ModelSpec("qwen3_8b", "Qwen3-8B", "llm", "benchmark.models.llm:load_qwen3_8b"),
+    "mistral_7b": ModelSpec("mistral_7b", "Mistral-7B", "llm", "benchmark.models.llm:load_mistral_7b"),
 }
 
 # Class -> model keys, for --models filtering.
 CLASS_MODELS: dict[str, list[str]] = {
     "vision": ["resnet50", "vit"],
-    "llm": ["gpt2"],
+    "llm": ["gpt2", "qwen3_0b6", "qwen3_8b", "mistral_7b"],
 }
 
 # Tier -> ordered model keys (slice covers quick == core).
 TIER_MODELS: dict[str, list[str]] = {
     "quick": ["resnet50", "vit", "gpt2"],
     "core": ["resnet50", "vit", "gpt2"],
+    "llm-scale": ["gpt2", "qwen3_0b6", "qwen3_8b", "mistral_7b"],
 }
 
 
