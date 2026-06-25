@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-determinism-benchmark"
+version = "0.1.0"
+description = "Benchmark the cost of making neural-network inference bit-exact reproducible"
+requires-python = ">=3.10"
+dependencies = [
+    "torch",
+    "torchvision",
+    "transformers",
+    "numpy",
+    "psutil",
+    "rich",
+]
+
+[project.optional-dependencies]
+# Apple MLX backend: LLM via mlx-lm; vision (ResNet-50) is MLX-native, no extra dep
+mlx = ["mlx", "mlx-lm"]
+
+[tool.setuptools.packages.find]
+include = ["benchmark*"]
